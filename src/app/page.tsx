@@ -56,7 +56,11 @@ const ImageUploadForm = () => {
             <FormField
               control={form.control}
               name="images"
-              render={({ field }: { field: ControllerRenderProps<FormData, "images"> }) => (
+              render={({
+                field,
+              }: {
+                field: ControllerRenderProps<FormData, "images">;
+              }) => (
                 <FormItem>
                   <FormLabel className="text-lg font-medium text-gray-900">
                     Upload your images or files (up to 5)
