@@ -100,23 +100,92 @@ npx shadcn-ui@latest add button form label
 
 #### 3. Configure Tailwind CSS
 
-Ensure your `tailwind.config.ts` includes the `shadcn/ui` color variables (e.g., `--muted`, `--primary`). Example:
+To ensure the `MultiImageUpload` component works correctly with its glow-and-dim animation during deletion, you need to configure your `tailwind.config.ts` with the `shadcn/ui` color variables (e.g., `--muted`, `--primary`) and the custom `glow-effect` animation. Below is an example configuration:
 
 ```ts
+/** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./src/**/*.{ts,tsx}"],
+  darkMode: ["class"],
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
   theme: {
     extend: {
       colors: {
-        muted: "hsl(var(--muted))",
-        "muted-foreground": "hsl(var(--muted-foreground))",
-        primary: "hsl(var(--primary))",
-        "primary-foreground": "hsl(var(--primary-foreground))",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: `var(--radius)`,
+        md: `calc(var(--radius) - 2px)`,
+        sm: "calc(var(--radius) - 4px)",
+      },
+      animation: {
+        "glow-effect": "glow-effect 1.5s infinite ease-in-out",
+      },
+      keyframes: {
+        "glow-effect": {
+          "0%, 100%": {
+            boxShadow:
+              "0 0 10px var(--muted-foreground), 0 0 20px var(--muted)",
+            opacity: "1",
+          },
+          "50%": {
+            boxShadow:
+              "0 0 20px var(--primary), 0 0 40px var(--primary-foreground)",
+            opacity: "0.5",
+          },
+        },
       },
     },
   },
+  plugins: [require("tailwindcss-animate")],
 };
 ```
+
+**Important Notes:**
+
+- **Animation**: The `glow-effect` animation is critical for the deletion feedback in `MultiImageUpload`. You **must** include the `animation` and `keyframes` definitions as shown above. The animation uses `box-shadow` and `opacity` to create a glowing and dimming effect, relying on `shadcn/ui` color variables (`--muted`, `--muted-foreground`, `--primary`, `--primary-foreground`).
+- **Plugin**: Add the `tailwindcss-animate` plugin to enable custom animations. Install it with:
+
+  ```bash
+  bun add -D tailwindcss-animate
+  ```
+
+- **Colors**: Ensure your `shadcn/ui` setup defines the required CSS variables in `globals.css` or a similar stylesheet (e.g., via `:root { --muted: 210 40% 96.1%; }`). If not, replace the variables with specific HSL or hex values.
 
 #### 4. Example Usage
 
