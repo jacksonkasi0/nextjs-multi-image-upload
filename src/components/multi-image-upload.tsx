@@ -210,11 +210,11 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   );
 
   return (
-    <section className={cn("flex flex-col max-w-lg", className)}>
-      <div className="grid grid-cols-5 gap-3">
+    <section className={cn("flex flex-col w-full", className)}>
+      <div className="flex flex-wrap gap-4">
         {(maxImages === undefined || files.length < maxImages) && (
-          <Button variant="outline" className="h-24 w-24" asChild>
-            <label className="flex h-full! w-full! cursor-pointer items-center justify-center">
+          <Button variant="outline" className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0" asChild>
+            <label className="flex h-full w-full cursor-pointer items-center justify-center text-sm sm:text-base">
               Browse
               <input
                 type="file"
@@ -244,7 +244,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
         ))}
       </div>
       {validationMsg && (
-        <p className="mt-2 text-sm text-destructive">{validationMsg}</p>
+        <p className="mt-2 text-sm text-red-600">{validationMsg}</p>
       )}
     </section>
   );
