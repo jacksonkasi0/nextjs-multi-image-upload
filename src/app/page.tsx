@@ -16,7 +16,7 @@ const ImageUploadForm = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg mx-auto  my-auto">
       <h2 className="text-lg font-semibold">Upload Your Images</h2>
 
       <MultiImageUpload

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { X, File } from "lucide-react";
 import { z } from "zod";
@@ -24,7 +24,9 @@ export const ImagesSchema = (min: number, max?: number) => {
   const base = z
     .array(z.string().url({ message: "Invalid image URL" }))
     .min(min, { message: `At least ${min} image(s) required` });
-  return max ? base.max(max, { message: `At most ${max} image(s) allowed` }) : base;
+  return max
+    ? base.max(max, { message: `At most ${max} image(s) allowed` })
+    : base;
 };
 
 // --- Internal File Type ---
@@ -104,7 +106,9 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
     const result = ImagesSchema(minImages, maxImages).safeParse(
       files.map((f) => f.url)
     );
-    setValidationMsg(result.success ? "" : result.error.issues[0]?.message || "");
+    setValidationMsg(
+      result.success ? "" : result.error.issues[0]?.message || ""
+    );
   }, [files, minImages, maxImages]);
 
   // Handle file uploads in parallel.
@@ -113,7 +117,9 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
       const fileArray = Array.from(filesList);
       fileArray.forEach((file) => {
         // If maxImages is defined and reached, skip adding new files.
-        setFiles((prev) => (maxImages && prev.length >= maxImages ? prev : prev));
+        setFiles((prev) =>
+          maxImages && prev.length >= maxImages ? prev : prev
+        );
 
         // Generate a unique id for this file.
         const id =
@@ -147,9 +153,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
             // 2. Upload the file with progress tracking.
             await uploadFileToSignedUrl(file, uploadUrl, (progress) => {
               setFiles((prev) =>
-                prev.map((f) =>
-                  f.id === id ? { ...f, progress } : f
-                )
+                prev.map((f) => (f.id === id ? { ...f, progress } : f))
               );
             });
             // Derive the public URL by stripping query parameters.
@@ -206,11 +210,11 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   );
 
   return (
-    <section className={cn("flex flex-col", className)}>
+    <section className={cn("flex flex-col max-w-lg", className)}>
       <div className="grid grid-cols-5 gap-3">
         {(maxImages === undefined || files.length < maxImages) && (
           <Button variant="outline" className="h-24 w-24" asChild>
-            <label className="flex h-full w-full cursor-pointer items-center justify-center">
+            <label className="flex h-full! w-full! cursor-pointer items-center justify-center">
               Browse
               <input
                 type="file"
