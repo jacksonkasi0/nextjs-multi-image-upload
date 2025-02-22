@@ -16,7 +16,7 @@ export async function generateSignedUrl(
   contentType: string
 ): Promise<SignedUrlResponse> {
   try {
-    const response = await axios.post<SignedUrlResponse>("/api/s3/signed-url", {
+    const response = await axios.post<SignedUrlResponse>("/api/upload/signed-url", {
       fileName,
       contentType,
     });
@@ -80,7 +80,7 @@ export async function uploadFileToSignedUrl(
  */
 export async function deleteFile(fileUrl: string): Promise<void> {
   try {
-    await axios.delete("/api/s3/delete", {
+    await axios.delete("/api/upload/delete", {
       data: { fileUrl },
     });
   } catch (error) {

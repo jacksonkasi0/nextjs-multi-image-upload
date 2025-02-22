@@ -1,3 +1,4 @@
+'use client';
 import React, { useCallback, useEffect, useState } from "react";
 import { X, File } from "lucide-react";
 import { z } from "zod";
