@@ -1,7 +1,6 @@
 "use client";
 import React, { useCallback } from "react";
 import { X, File } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +24,7 @@ interface UploadedFile {
   progress: number;
   fileType: string;
   isUploading: boolean;
+  isDeleting?: boolean; // New flag to track deletion state
 }
 
 // --- Reusable Preview Component ---
@@ -35,6 +35,7 @@ export interface ImagePreviewProps {
   isUploading?: boolean;
   progress?: number;
   fileType: string;
+  isDeleting?: boolean; // New prop for deletion animation
 }
 
 export const ImagePreview: React.FC<ImagePreviewProps> = ({
@@ -44,19 +45,25 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   isUploading = false,
   progress = 0,
   fileType,
+  isDeleting = false,
 }) => {
   const isImage = fileType.startsWith("image/");
   return (
-    <div className="relative flex-shrink-0">
+    <div
+      className={cn(
+        "relative flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-md transition-all duration-600 ease-in-out",
+        isDeleting && "animate-glow-effect"
+      )}
+    >
       {isImage ? (
         <img
           src={src}
           alt={alt}
-          className="h-20 w-20 rounded-md object-cover sm:h-24 sm:w-24"
+          className="w-full h-full object-cover rounded-md transition-opacity duration-500 ease-in-out"
           loading="lazy"
         />
       ) : (
-        <div className="h-20 w-20 flex items-center justify-center bg-gray-100 rounded-md sm:h-24 sm:w-24">
+        <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-md">
           <File className="h-8 w-8 text-gray-500 sm:h-10 sm:w-10" />
         </div>
       )}
@@ -65,7 +72,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
           <span className="text-white text-xs sm:text-sm">{progress}%</span>
         </div>
       )}
-      {onDelete && (
+      {onDelete && !isDeleting && (
         <button
           onClick={onDelete}
           className="absolute right-1 top-1 rounded-full bg-gray-200 p-1 text-gray-600 hover:bg-gray-300 focus:outline-none"
@@ -81,7 +88,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
 
 // --- Core Component ---
 export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
-  value = [], // Default to empty array if no value is provided
+  value = [],
   onChange,
   maxImages,
   className,
@@ -94,10 +101,11 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
       value.map((url, index) => ({
         id: prev[index]?.id || `${index}-${Date.now()}`,
         url,
-        deleteUrl: url, // Assuming deleteUrl matches url for external values
+        deleteUrl: url,
         progress: 100,
-        fileType: prev[index]?.fileType || "image/jpeg", // Default type if unknown
+        fileType: prev[index]?.fileType || "image/jpeg",
         isUploading: false,
+        isDeleting: false,
       }))
     );
   }, [value]);
@@ -121,6 +129,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
           progress: 0,
           fileType: file.type,
           isUploading: true,
+          isDeleting: false,
         };
 
         setFiles((prev) => {
@@ -171,6 +180,14 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
     (id: string) => {
       const fileToDelete = files.find((f) => f.id === id);
       if (!fileToDelete) return;
+
+      // Set isDeleting to true to trigger animation
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === id ? { ...f, isDeleting: true } : f
+        )
+      );
+
       deleteFile(fileToDelete.deleteUrl)
         .then(() => {
           setFiles((prev) => {
@@ -181,6 +198,12 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
         })
         .catch((error) => {
           console.error("Failed to delete file", error);
+          // Reset isDeleting on error
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === id ? { ...f, isDeleting: false } : f
+            )
+          );
         });
     },
     [files, onChange]
@@ -220,6 +243,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
             fileType={file.fileType}
             isUploading={file.isUploading}
             progress={file.progress}
+            isDeleting={file.isDeleting}
             onDelete={() => handleDeleteImage(file.id)}
           />
         ))}
