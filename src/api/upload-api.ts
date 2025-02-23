@@ -1,8 +1,12 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosProgressEvent, AxiosResponse } from 'axios';
 
 // Define expected types for API responses
-type SignedUrlResponse = { uploadUrl: string };
-// type UploadProgressCallback = (percent: number) => void;
+interface SignedUrlResponse {
+  uploadUrl: string;
+}
+
+// Define progress callback type
+type UploadProgressCallback = (percent: number) => void;
 
 /**
  * Generates a signed URL for uploading a file.
@@ -16,18 +20,22 @@ export async function generateSignedUrl(
   contentType: string
 ): Promise<SignedUrlResponse> {
   try {
-    const response = await axios.post<SignedUrlResponse>("/api/upload/signed-url", {
-      fileName,
-      contentType,
-    });
+    const response: AxiosResponse<SignedUrlResponse> = await axios.post(
+      '/api/upload/signed-url',
+      {
+        fileName,
+        contentType,
+      }
+    );
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
+    const axiosError = error as AxiosError<{ error: string }>;
+    if (axiosError.isAxiosError && axiosError.response) {
       throw new Error(
-        `Error generating signed URL: ${error.response.data.error}`
+        `Error generating signed URL: ${axiosError.response.data.error}`
       );
     }
-    throw new Error(`Error generating signed URL: ${error}`);
+    throw new Error(`Error generating signed URL: ${String(error)}`);
   }
 }
 
@@ -39,20 +47,19 @@ export async function generateSignedUrl(
  * @param onProgress - Callback function to report the upload progress (percentage).
  * @returns A promise that resolves when the upload is complete.
  */
-
 export async function uploadFileToSignedUrl(
   file: File,
   signedUrl: string,
-  onProgress: (percent: number) => void
+  onProgress: UploadProgressCallback
 ): Promise<void> {
   try {
     await axios.put(signedUrl, file, {
       headers: {
-        "Content-Type": file.type,
+        'Content-Type': file.type,
       },
-      // Disable request transformation so the File/Blob is sent as-is.
-      transformRequest: [(data) => data],
-      onUploadProgress: (progressEvent) => {
+      // Disable request transformation so the File/Blob is sent as-is
+      transformRequest: [(data: unknown) => data],
+      onUploadProgress: (progressEvent: AxiosProgressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
@@ -62,13 +69,14 @@ export async function uploadFileToSignedUrl(
       },
     });
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      console.error("Error response data:", error.response.data);
+    const axiosError = error as AxiosError<{ error?: string }>;
+    if (axiosError.isAxiosError && axiosError.response) {
+      console.error('Error response data:', axiosError.response.data);
       throw new Error(
-        `Error uploading file: ${error.response.data.error || "Unknown error"}`
+        `Error uploading file: ${axiosError.response.data.error || 'Unknown error'}`
       );
     }
-    throw new Error(`Error uploading file: ${error}`);
+    throw new Error(`Error uploading file: ${String(error)}`);
   }
 }
 
@@ -80,13 +88,14 @@ export async function uploadFileToSignedUrl(
  */
 export async function deleteFile(fileUrl: string): Promise<void> {
   try {
-    await axios.delete("/api/upload/delete", {
+    await axios.delete('/api/upload/delete', {
       data: { fileUrl },
     });
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(`Error deleting file: ${error.response.data.error}`);
+    const axiosError = error as AxiosError<{ error: string }>;
+    if (axiosError.isAxiosError && axiosError.response) {
+      throw new Error(`Error deleting file: ${axiosError.response.data.error}`);
     }
-    throw new Error(`Error deleting file: ${error}`);
+    throw new Error(`Error deleting file: ${String(error)}`);
   }
 }
