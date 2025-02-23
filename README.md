@@ -15,9 +15,11 @@ A reusable, responsive multi-image upload component built with Next.js, TypeScri
 - **Customizable**: Easily styled via Tailwind CSS classes and extensible through props.
 - **API Support**: Integrates with signed URL generation and file upload/deletion APIs (server-side logic included).
 
-## Demo Link
+## Demo
 
 - <https://nextjs-multi-image-upload.vercel.app>
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/b7fc9d6650854953b108d17be81c1e2a?sid=41215317-6a75-4dd2-a336-4b4313c84ef6" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 ## Prerequisites
 
