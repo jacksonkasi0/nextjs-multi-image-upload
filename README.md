@@ -21,7 +21,7 @@ A reusable, responsive multi-image upload component built with Next.js, TypeScri
 
 <div>
     <a href="https://www.loom.com/share/b7fc9d6650854953b108d17be81c1e2a">
-      <p>Next.js Multi-Image Upload - 23 February 2025 - Watch Video</p>
+      <p>Next.js Multi-Image Upload</p>
     </a>
     <a href="https://www.loom.com/share/b7fc9d6650854953b108d17be81c1e2a">
       <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/b7fc9d6650854953b108d17be81c1e2a-7bf516d6b82ee20d-full-play.gif">
