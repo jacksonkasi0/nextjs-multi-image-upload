@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Define expected types for API responses
 type SignedUrlResponse = { uploadUrl: string };
-type UploadProgressCallback = (percent: number) => void;
+// type UploadProgressCallback = (percent: number) => void;
 
 /**
  * Generates a signed URL for uploading a file.

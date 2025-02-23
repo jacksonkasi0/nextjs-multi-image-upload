@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let { fileName, contentType } = parsedData.data as SignedUrlInput;
+    const { fileName, contentType } = parsedData.data as SignedUrlInput;
 
     // Use the mime-types package to get the proper MIME type if it's not provided.
     if (!contentType || contentType.trim() === "") {
