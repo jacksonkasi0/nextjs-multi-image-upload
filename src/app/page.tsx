@@ -62,7 +62,7 @@ const ImageUploadForm = () => {
                 field: ControllerRenderProps<FormData, "images">;
               }) => (
                 <FormItem>
-                  <FormLabel className="text-lg font-medium text-gray-900">
+                  <FormLabel className="text-lg font-medium">
                     Upload your images or files (up to 5)
                   </FormLabel>
                   <FormControl>
