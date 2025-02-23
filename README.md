@@ -2,6 +2,8 @@
 
 A reusable, responsive multi-image upload component built with Next.js, TypeScript, Tailwind CSS, `shadcn/ui`, and `react-hook-form`. This project provides a simple, type-safe solution for uploading multiple images with progress tracking, deletion feedback, and form validation integration.
 
+![Demo - Next.js Multi-Image Upload](/public/og-image.png)
+
 ## Features
 
 - **Multi-Image Upload**: Upload multiple files with a configurable maximum limit (default: 5).
