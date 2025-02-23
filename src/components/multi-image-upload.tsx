@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { X, File } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import {
 
 // --- Types ---
 export interface MultiImageUploadProps {
-  value?: string[]; // Controlled value from react-hook-form
-  onChange?: (images: string[]) => void; // Callback to update form value
-  maxImages?: number; // Optional limit on number of images
+  value?: string[];
+  onChange?: (images: string[]) => void;
+  maxImages?: number;
   className?: string;
 }
 
@@ -24,7 +24,7 @@ interface UploadedFile {
   progress: number;
   fileType: string;
   isUploading: boolean;
-  isDeleting?: boolean; // New flag to track deletion state
+  isDeleting: boolean;
 }
 
 // --- Reusable Preview Component ---
@@ -35,7 +35,7 @@ export interface ImagePreviewProps {
   isUploading?: boolean;
   progress?: number;
   fileType: string;
-  isDeleting?: boolean; // New prop for deletion animation
+  isDeleting?: boolean;
 }
 
 export const ImagePreview: React.FC<ImagePreviewProps> = ({
@@ -72,7 +72,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
           <span className="text-white text-xs sm:text-sm">{progress}%</span>
         </div>
       )}
-      {onDelete && !isDeleting && (
+      {onDelete && !isUploading && !isDeleting && (
         <button
           onClick={onDelete}
           className="absolute right-1 top-1 rounded-full bg-gray-200 p-1 text-gray-600 hover:bg-gray-300 focus:outline-none"
@@ -86,7 +86,6 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   );
 };
 
-// --- Core Component ---
 export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   value = [],
   onChange,
@@ -94,35 +93,72 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   className,
 }) => {
   const [files, setFiles] = React.useState<UploadedFile[]>([]);
+  const prevValueRef = useRef<string[]>(value);
+  const isControlled = value !== undefined && onChange !== undefined;
 
-  // Sync internal state with external value
-  React.useEffect(() => {
-    setFiles((prev) =>
-      value.map((url, index) => ({
-        id: prev[index]?.id || `${index}-${Date.now()}`,
-        url,
-        deleteUrl: url,
-        progress: 100,
-        fileType: prev[index]?.fileType || "image/jpeg",
-        isUploading: false,
-        isDeleting: false,
-      }))
-    );
-  }, [value]);
+  // Sync internal files with the incoming value prop
+  useEffect(() => {
+    if (!isControlled) return;
+
+    const valueChanged =
+      JSON.stringify(value) !== JSON.stringify(prevValueRef.current);
+    if (valueChanged) {
+      // Clean up previous blob URLs
+      setFiles((prev) => {
+        prev.forEach((file) => {
+          if (file.isUploading && file.url.startsWith("blob:")) {
+            URL.revokeObjectURL(file.url);
+          }
+        });
+
+        const newFiles = value.map((url, index) => ({
+          id: `${index}-${Date.now()}`,
+          url,
+          deleteUrl: url,
+          progress: 100,
+          fileType: url.match(/\.(jpeg|jpg|png|gif)$/i)
+            ? "image/jpeg"
+            : "application/octet-stream",
+          isUploading: false,
+          isDeleting: false,
+        }));
+
+        prevValueRef.current = value;
+        return newFiles;
+      });
+    }
+  }, [value, isControlled]);
+
+  // Sync files with parent component after files change
+  useEffect(() => {
+    if (isControlled) {
+      const fileUrls = files.map((f) => f.url);
+      const currentValue = prevValueRef.current;
+      if (JSON.stringify(fileUrls) !== JSON.stringify(currentValue)) {
+        onChange?.(fileUrls);
+        prevValueRef.current = fileUrls; // Update ref to avoid redundant calls
+      }
+    }
+  }, [files, isControlled, onChange]);
 
   const handleUpload = useCallback(
     (filesList: FileList) => {
       const fileArray = Array.from(filesList);
-      fileArray.forEach((file) => {
-        if (maxImages && files.length >= maxImages) return;
+      if (maxImages && files.length + fileArray.length > maxImages) {
+        console.warn(`Maximum of ${maxImages} images allowed`);
+        fileArray.splice(maxImages - files.length);
+      }
 
-        const id =
-          Date.now().toString() + Math.random().toString(36).substring(2, 9);
+      const newFiles = fileArray.map((file) => {
+        const id = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}`;
         const isImage = file.type.startsWith("image/");
         const previewUrl = isImage
           ? URL.createObjectURL(file)
           : "/file-icon-placeholder.png";
-        const newFile: UploadedFile = {
+
+        return {
           id,
           url: previewUrl,
           deleteUrl: "",
@@ -131,83 +167,88 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
           isUploading: true,
           isDeleting: false,
         };
+      });
 
-        setFiles((prev) => {
-          const updated = [...prev, newFile];
-          onChange?.(updated.map((f) => f.url));
-          return updated;
-        });
+      setFiles((prev) => [...prev, ...newFiles]);
 
-        (async () => {
+      newFiles.forEach((newFile, index) => {
+        const file = fileArray[index];
+        const uploadFileAsync = async () => {
           try {
             const { uploadUrl } = await generateSignedUrl(file.name, file.type);
             await uploadFileToSignedUrl(file, uploadUrl, (progress) => {
-              setFiles((prev) =>
-                prev.map((f) => (f.id === id ? { ...f, progress } : f))
+              setFiles((prevFiles) =>
+                prevFiles.map((f) =>
+                  f.id === newFile.id ? { ...f, progress } : f
+                )
               );
             });
             const publicUrl = uploadUrl.split("?")[0];
-            setFiles((prev) => {
-              const updated = prev.map((f) =>
-                f.id === id
+            setFiles((prevFiles) =>
+              prevFiles.map((f) =>
+                f.id === newFile.id
                   ? {
                       ...f,
-                      url: publicUrl!,
-                      deleteUrl: publicUrl!,
+                      url: publicUrl,
+                      deleteUrl: publicUrl,
                       isUploading: false,
                       progress: 100,
                     }
                   : f
-              );
-              onChange?.(updated.map((f) => f.url));
-              return updated;
-            });
+              )
+            );
           } catch (error) {
             console.error("Upload failed for file", file.name, error);
-            setFiles((prev) => {
-              const updated = prev.filter((f) => f.id !== id);
-              onChange?.(updated.map((f) => f.url));
-              return updated;
-            });
+            setFiles((prevFiles) =>
+              prevFiles.filter((f) => f.id !== newFile.id)
+            );
+          } finally {
+            if (newFile.url.startsWith("blob:")) {
+              URL.revokeObjectURL(newFile.url);
+            }
           }
-        })();
+        };
+        uploadFileAsync();
       });
     },
-    [files.length, maxImages, onChange]
+    [files.length, maxImages]
   );
 
   const handleDeleteImage = useCallback(
     (id: string) => {
+      setFiles((prev) => {
+        const fileToDelete = prev.find((f) => f.id === id);
+        if (!fileToDelete || fileToDelete.isDeleting) return prev;
+        return prev.map((f) => (f.id === id ? { ...f, isDeleting: true } : f));
+      });
+
       const fileToDelete = files.find((f) => f.id === id);
       if (!fileToDelete) return;
 
-      // Set isDeleting to true to trigger animation
-      setFiles((prev) =>
-        prev.map((f) =>
-          f.id === id ? { ...f, isDeleting: true } : f
-        )
-      );
-
       deleteFile(fileToDelete.deleteUrl)
         .then(() => {
-          setFiles((prev) => {
-            const updated = prev.filter((f) => f.id !== id);
-            onChange?.(updated.map((f) => f.url));
-            return updated;
-          });
+          setFiles((prev) => prev.filter((f) => f.id !== id));
         })
         .catch((error) => {
           console.error("Failed to delete file", error);
-          // Reset isDeleting on error
           setFiles((prev) =>
-            prev.map((f) =>
-              f.id === id ? { ...f, isDeleting: false } : f
-            )
+            prev.map((f) => (f.id === id ? { ...f, isDeleting: false } : f))
           );
         });
     },
-    [files, onChange]
+    [files]
   );
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      files.forEach((file) => {
+        if (file.url.startsWith("blob:")) {
+          URL.revokeObjectURL(file.url);
+        }
+      });
+    };
+  }, [files]);
 
   return (
     <div className={cn("flex flex-col w-full", className)}>
@@ -226,7 +267,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
+                  if (e.target.files?.length) {
                     handleUpload(e.target.files);
                     e.target.value = "";
                   }
@@ -235,11 +276,11 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
             </label>
           </Button>
         )}
-        {files.map((file, index) => (
+        {files.map((file) => (
           <ImagePreview
             key={file.id}
             src={file.url}
-            alt={`File ${index + 1}`}
+            alt={`File ${file.id}`}
             fileType={file.fileType}
             isUploading={file.isUploading}
             progress={file.progress}
@@ -251,5 +292,3 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
     </div>
   );
 };
-
-export default MultiImageUpload;
