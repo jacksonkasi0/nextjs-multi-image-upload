@@ -322,4 +322,4 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## Credits
 
-Created by [jacksonkasi0](https://github.com/jacksonkasi0).
+Created by [jacksonkasi0](https://github.com/jacksonkasi0) & [jacksonkasi1](https://github.com/jacksonkasi1).
