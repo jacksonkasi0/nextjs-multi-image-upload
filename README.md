@@ -70,6 +70,8 @@ A reusable, responsive multi-image upload component built with Next.js, TypeScri
         AWS_BUCKET_NAME="xxxxx" # your bucket name
      ```
 
+    👀 **Check the [`Secure_S3_Bucket_Setup.md`](./Secure_S3_Bucket_Setup.md) guide for setting up a secure S3 bucket.** 🛡️
+
 4. **Run the Development Server**:
 
    ```bash
