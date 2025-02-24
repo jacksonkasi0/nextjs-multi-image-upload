@@ -132,6 +132,8 @@ If you need to **upload images** using **signed URLs**, you must allow the **PUT
 
 3. **Save the CORS Configuration.**
 
+![S3 Example](/public/s3-example.png)
+
 ---
 
 ## 5. Enable Additional Security Features
