@@ -1,5 +1,7 @@
 # Secure S3 Bucket Setup Guide
 
+![Secure S3 Bucket Setup Guide](/public/s3-guide/s3.jpg)
+
 This guide explains how to securely create an S3 bucket for storing and serving images. It walks you through each step—from creating the bucket to configuring access policies and CORS settings—ensuring your content is only accessible from trusted domains.
 
 ---
@@ -20,6 +22,8 @@ This guide explains how to securely create an S3 bucket for storing and serving 
    To allow your custom bucket policy, disable **Block public bucket policies** while keeping other block settings enabled.  
    *(Remember to carefully manage your policy to avoid unintentional exposure.)*
 
+![Disable block public bucket policies](/public/s3-guide/Image%201.png)
+
 4. **Finalize Creation:**  
    Complete the remaining steps and click **Create bucket**.
 
@@ -31,6 +35,8 @@ This guide explains how to securely create an S3 bucket for storing and serving 
    - Go to your bucket’s **Permissions** tab.
    - Under **Object Ownership**, choose **Bucket owner enforced**.  
      This disables Access Control Lists (ACLs) so that only your bucket policy controls access.
+
+![Set Object Ownership](/public/s3-guide/Image%203.png)
 
 ---
 
@@ -86,6 +92,8 @@ A bucket policy controls who can access your bucket’s objects. In this guide, 
    }
    ```
 
+![Set Object Ownership](/public/s3-guide/Image%202.png)
+
 3. **Save the Policy.**
 
 ---
@@ -130,9 +138,11 @@ If you need to **upload images** using **signed URLs**, you must allow the **PUT
 ]
 ```
 
+![Set Object Ownership](/public/s3-guide/Image%204.png)
+
 3. **Save the CORS Configuration.**
 
-![S3 Example](/public/s3-example.png)
+![S3 Example](/public/s3-guide/s3-example.png)
 
 ---
 
