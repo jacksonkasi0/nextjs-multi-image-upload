@@ -129,7 +129,7 @@ import {
         Bucket: env.AWS_BUCKET_NAME,
         Key: filePath,
       ContentType: contentType,
-      ACL: "public-read",
+      // ACL: "public-read", // # checkout the s3 guide file.
     });
   
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
