@@ -92,7 +92,7 @@ A bucket policy controls who can access your bucket’s objects. In this guide, 
    }
    ```
 
-![Set Object Ownership](/public/s3-guide/Image%202.png)
+![Set Up a Bucket Policy](/public/s3-guide/Image%202.png)
 
 3. **Save the Policy.**
 
@@ -138,11 +138,11 @@ If you need to **upload images** using **signed URLs**, you must allow the **PUT
 ]
 ```
 
-![Set Object Ownership](/public/s3-guide/Image%204.png)
+![Configure CORS (Cross-Origin Resource Sharing)](/public/s3-guide/Image%204.png)
 
 3. **Save the CORS Configuration.**
 
-![S3 Example](/public/s3-guide/s3-example.png)
+![S3 CORS Example](/public/s3-guide/s3-example.png)
 
 ---
 
