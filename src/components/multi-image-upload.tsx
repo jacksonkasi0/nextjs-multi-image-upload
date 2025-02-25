@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useCallback, useEffect, useRef } from "react";
 import { X, File } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,11 +11,14 @@ import {
 } from "@/api/upload-api";
 
 // --- Types ---
-export interface MultiImageUploadProps {
+interface MultiImageUploadProps {
   value?: string[];
   onChange?: (images: string[]) => void;
   maxImages?: number;
   className?: string;
+  name?: string;
+  imageRegex?: RegExp;
+  accept?: string;
 }
 
 interface UploadedFile {
@@ -27,8 +31,7 @@ interface UploadedFile {
   isDeleting: boolean;
 }
 
-// --- Reusable Preview Component ---
-export interface ImagePreviewProps {
+interface ImagePreviewProps {
   src: string;
   alt?: string;
   onDelete?: () => void;
@@ -38,6 +41,7 @@ export interface ImagePreviewProps {
   isDeleting?: boolean;
 }
 
+// --- Image Preview Component ---
 export const ImagePreview: React.FC<ImagePreviewProps> = ({
   src,
   alt = "File preview",
@@ -86,111 +90,118 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   );
 };
 
+// --- MultiImageUpload Component ---
 export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   value = [],
   onChange,
   maxImages,
   className,
+  name,
+  imageRegex = /\.(jpeg|jpg|png|gif|webp|avif)$/i,
+  accept = "image/*",
 }) => {
-  const [files, setFiles] = React.useState<UploadedFile[]>([]);
+  // Initialize state with value directly
+  const [files, setFiles] = React.useState<UploadedFile[]>(() =>
+    value.map((url, index) => ({
+      id: `${index}-${Date.now()}`,
+      url,
+      deleteUrl: url,
+      progress: 100,
+      fileType: imageRegex.test(url)
+        ? `image/${url.split(".").pop()?.toLowerCase() || "jpeg"}`
+        : "application/octet-stream",
+      isUploading: false,
+      isDeleting: false,
+    }))
+  );
+
   const prevValueRef = useRef<string[]>(value);
-  const isControlled = value !== undefined && onChange !== undefined;
+  const isControlled = !!onChange;
 
-  // Sync internal files with the incoming value prop
-  useEffect(() => {
-    if (!isControlled) return;
-
-    const valueChanged =
-      JSON.stringify(value) !== JSON.stringify(prevValueRef.current);
-    if (valueChanged) {
-      // Clean up previous blob URLs
-      setFiles((prev) => {
-        prev.forEach((file) => {
-          if (file.isUploading && file.url.startsWith("blob:")) {
-            URL.revokeObjectURL(file.url);
-          }
-        });
-
-        const newFiles = value.map((url, index) => ({
+  // Helper to map URLs to UploadedFile objects
+  const mapToFiles = (urls: string[]): UploadedFile[] =>
+    urls.map((url, index) => {
+      const existing = files.find((f) => f.url === url);
+      return (
+        existing || {
           id: `${index}-${Date.now()}`,
           url,
           deleteUrl: url,
           progress: 100,
-          fileType: url.match(/\.(jpeg|jpg|png|gif)$/i)
-            ? "image/jpeg"
+          fileType: imageRegex.test(url)
+            ? `image/${url.split(".").pop()?.toLowerCase() || "jpeg"}`
             : "application/octet-stream",
           isUploading: false,
           isDeleting: false,
-        }));
+        }
+      );
+    });
 
-        prevValueRef.current = value;
-        return newFiles;
-      });
-    }
-  }, [value, isControlled]);
-
-  // Sync files with parent component after files change
+  // Sync state with parent value and form state
   useEffect(() => {
-    if (isControlled) {
-      const fileUrls = files.map((f) => f.url);
-      const currentValue = prevValueRef.current;
-      if (JSON.stringify(fileUrls) !== JSON.stringify(currentValue)) {
-        onChange?.(fileUrls);
-        prevValueRef.current = fileUrls; // Update ref to avoid redundant calls
-      }
+    const valueChanged =
+      JSON.stringify(value) !== JSON.stringify(prevValueRef.current);
+    if (isControlled && valueChanged) {
+      setFiles(mapToFiles(value));
+      prevValueRef.current = value;
     }
-  }, [files, isControlled, onChange]);
 
+    const fileUrls = files.map((f) => f.url);
+    if (
+      isControlled &&
+      JSON.stringify(fileUrls) !== JSON.stringify(prevValueRef.current)
+    ) {
+      onChange(fileUrls);
+      prevValueRef.current = fileUrls;
+    }
+  }, [value, files, isControlled, onChange, imageRegex]);
+
+  // Handle file upload
   const handleUpload = useCallback(
     (filesList: FileList) => {
-      const fileArray = Array.from(filesList);
-      if (maxImages && files.length + fileArray.length > maxImages) {
-        console.warn(`Maximum of ${maxImages} images allowed`);
-        fileArray.splice(maxImages - files.length);
+      const fileArray = Array.from(filesList).slice(
+        0,
+        maxImages ? maxImages - files.length : undefined
+      );
+
+      if (fileArray.length === 0 && maxImages) {
+        console.warn(`Maximum of ${maxImages} files allowed`);
+        return;
       }
 
-      const newFiles = fileArray.map((file) => {
-        const id = `${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 9)}`;
-        const isImage = file.type.startsWith("image/");
-        const previewUrl = isImage
-          ? URL.createObjectURL(file)
-          : "/file-icon-placeholder.png";
-
-        return {
-          id,
-          url: previewUrl,
-          deleteUrl: "",
-          progress: 0,
-          fileType: file.type,
-          isUploading: true,
-          isDeleting: false,
-        };
-      });
+      const newFiles: UploadedFile[] = fileArray.map((file) => ({
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        url: URL.createObjectURL(file),
+        deleteUrl: "",
+        progress: 0,
+        fileType: file.type || "application/octet-stream",
+        isUploading: true,
+        isDeleting: false,
+      }));
 
       setFiles((prev) => [...prev, ...newFiles]);
 
       newFiles.forEach((newFile, index) => {
         const file = fileArray[index];
-        const uploadFileAsync = async () => {
+        const upload = async () => {
           try {
-            const { uploadUrl } = await generateSignedUrl(file.name, file.type);
-            await uploadFileToSignedUrl(file, uploadUrl, (progress) => {
-              setFiles((prevFiles) =>
-                prevFiles.map((f) =>
-                  f.id === newFile.id ? { ...f, progress } : f
-                )
+            const { uploadUrl } = await generateSignedUrl(
+              file!.name,
+              file!.type
+            );
+            await uploadFileToSignedUrl(file!, uploadUrl, (progress) => {
+              setFiles((prev) =>
+                prev.map((f) => (f.id === newFile.id ? { ...f, progress } : f))
               );
             });
             const publicUrl = uploadUrl.split("?")[0];
-            setFiles((prevFiles) =>
-              prevFiles.map((f) =>
+            setFiles((prev) =>
+              prev.map((f) =>
                 f.id === newFile.id
                   ? {
                       ...f,
-                      url: publicUrl,
-                      deleteUrl: publicUrl,
+                      url: publicUrl!,
+                      deleteUrl: publicUrl!,
                       isUploading: false,
                       progress: 100,
                     }
@@ -198,39 +209,32 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
               )
             );
           } catch (error) {
-            console.error("Upload failed for file", file.name, error);
-            setFiles((prevFiles) =>
-              prevFiles.filter((f) => f.id !== newFile.id)
-            );
+            console.error(`Upload failed for ${file!.name}:`, error);
+            setFiles((prev) => prev.filter((f) => f.id !== newFile.id));
           } finally {
-            if (newFile.url.startsWith("blob:")) {
+            if (newFile.url.startsWith("blob:"))
               URL.revokeObjectURL(newFile.url);
-            }
           }
         };
-        uploadFileAsync();
+        upload();
       });
     },
     [files.length, maxImages]
   );
 
+  // Handle file deletion
   const handleDeleteImage = useCallback(
     (id: string) => {
-      setFiles((prev) => {
-        const fileToDelete = prev.find((f) => f.id === id);
-        if (!fileToDelete || fileToDelete.isDeleting) return prev;
-        return prev.map((f) => (f.id === id ? { ...f, isDeleting: true } : f));
-      });
-
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, isDeleting: true } : f))
+      );
       const fileToDelete = files.find((f) => f.id === id);
       if (!fileToDelete) return;
 
       deleteFile(fileToDelete.deleteUrl)
-        .then(() => {
-          setFiles((prev) => prev.filter((f) => f.id !== id));
-        })
+        .then(() => setFiles((prev) => prev.filter((f) => f.id !== id)))
         .catch((error) => {
-          console.error("Failed to delete file", error);
+          console.error("Failed to delete file:", error);
           setFiles((prev) =>
             prev.map((f) => (f.id === id ? { ...f, isDeleting: false } : f))
           );
@@ -243,9 +247,7 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
   useEffect(() => {
     return () => {
       files.forEach((file) => {
-        if (file.url.startsWith("blob:")) {
-          URL.revokeObjectURL(file.url);
-        }
+        if (file.url.startsWith("blob:")) URL.revokeObjectURL(file.url);
       });
     };
   }, [files]);
@@ -263,15 +265,13 @@ export const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
               Browse
               <input
                 type="file"
-                accept="*/*"
+                accept={accept}
                 multiple
                 className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.length) {
-                    handleUpload(e.target.files);
-                    e.target.value = "";
-                  }
-                }}
+                name={name}
+                onChange={(e) =>
+                  e.target.files?.length && handleUpload(e.target.files)
+                }
               />
             </label>
           </Button>
