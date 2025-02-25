@@ -1,4 +1,3 @@
-
 # Next.js Multi-Image Upload
 
 A reusable, responsive multi-image upload component built with Next.js, TypeScript, Tailwind CSS, `shadcn/ui`, and `react-hook-form`. This project provides a simple, type-safe solution for uploading multiple images with progress tracking, deletion feedback, and form validation integration.
@@ -27,7 +26,7 @@ A reusable, responsive multi-image upload component built with Next.js, TypeScri
     <a href="https://www.loom.com/share/b7fc9d6650854953b108d17be81c1e2a">
       <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/b7fc9d6650854953b108d17be81c1e2a-7bf516d6b82ee20d-full-play.gif">
     </a>
-  </div>
+</div>
 
 ## Prerequisites
 
@@ -61,16 +60,16 @@ A reusable, responsive multi-image upload component built with Next.js, TypeScri
    - Example `.env`:
 
      ```bash
-        NODE_ENV="production"
+     NODE_ENV="production"
 
-        # S3
-        AWS_ACCESS_KEY_ID="xxxxx" # your access key
-        AWS_SECRET_ACCESS_KEY="xxxxxxx" # your secret key
-        AWS_REGION="xxxxxx" # example: ap-south-1, us-east-1
-        AWS_BUCKET_NAME="xxxxx" # your bucket name
+     # S3
+     AWS_ACCESS_KEY_ID="xxxxx" # your access key
+     AWS_SECRET_ACCESS_KEY="xxxxxxx" # your secret key
+     AWS_REGION="xxxxxx" # example: ap-south-1, us-east-1
+     AWS_BUCKET_NAME="xxxxx" # your bucket name
      ```
 
-    👀 **Check the [`Secure_S3_Bucket_Setup.md`](./Secure_S3_Bucket_Setup.md) guide for setting up a secure S3 bucket.** 🛡️
+   👀 **Check the [`Secure_S3_Bucket_Setup.md`](./Secure_S3_Bucket_Setup.md) guide for setting up a secure S3 bucket.** 🛡️
 
 4. **Run the Development Server**:
 
@@ -114,7 +113,7 @@ npx shadcn-ui@latest add button form label
 
 #### 3. Configure Tailwind CSS
 
-To ensure the `MultiImageUpload` component works correctly with its glow-and-dim animation during deletion, you need to configure your `tailwind.config.ts` with the `shadcn/ui` color variables (e.g., `--muted`, `--primary`) and the custom `glow-effect` animation. Below is an example configuration:
+To ensure the `MultiImageUpload` component works correctly with its glow-and-dim animation during deletion, configure your `tailwind.config.ts` with the `shadcn/ui` color variables (e.g., `--muted`, `--primary`) and the custom `glow-effect` animation. Below is an example configuration:
 
 ```ts
 /** @type {import('tailwindcss').Config} */
@@ -128,10 +127,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        # code...
+        // shadcn/ui color definitions...
       },
       borderRadius: {
-        # code...
+        // shadcn/ui radius definitions...
       },
       animation: {
         "glow-effect": "glow-effect 1.5s infinite ease-in-out",
@@ -158,14 +157,14 @@ module.exports = {
 
 **Important Notes:**
 
-- **Animation**: The `glow-effect` animation is critical for the deletion feedback in `MultiImageUpload`. You **must** include the `animation` and `keyframes` definitions as shown above. The animation uses `box-shadow` and `opacity` to create a glowing and dimming effect, relying on `shadcn/ui` color variables (`--muted`, `--muted-foreground`, `--primary`, `--primary-foreground`).
+- **Animation**: The `glow-effect` animation is critical for deletion feedback in `MultiImageUpload`. You **must** include the `animation` and `keyframes` definitions as shown above. It uses `box-shadow` and `opacity`, relying on `shadcn/ui` color variables (`--muted`, `--muted-foreground`, `--primary`, `--primary-foreground`).
 - **Plugin**: Add the `tailwindcss-animate` plugin to enable custom animations. Install it with:
 
   ```bash
   bun add -D tailwindcss-animate
   ```
 
-- **Colors**: Ensure your `shadcn/ui` setup defines the required CSS variables in `globals.css` or a similar stylesheet (e.g., via `:root { --muted: 210 40% 96.1%; }`). If not, replace the variables with specific HSL or hex values.
+- **Colors**: Ensure your `shadcn/ui` setup defines the required CSS variables in `globals.css` (e.g., `:root { --muted: 210 40% 96.1%; }`). If not, replace the variables with specific HSL or hex values.
 
 #### 4. Example Usage
 
@@ -229,6 +228,8 @@ export default function Page() {
                       onChange={field.onChange}
                       maxImages={5}
                       className="my-4"
+                      imageRegex={/\.(jpeg|jpg|png|gif|webp|avif)$/i}
+                      accept="image/*"
                     />
                   </FormControl>
                   <FormMessage />
@@ -253,12 +254,19 @@ export default function Page() {
 
 ### Props for `MultiImageUpload`
 
-| Prop        | Type                         | Default | Description                     |
-| ----------- | ---------------------------- | ------- | ------------------------------- |
-| `value`     | `string[]`                   | `[]`    | Controlled array of image URLs  |
-| `onChange`  | `(images: string[]) => void` | -       | Callback to update the value    |
-| `maxImages` | `number`                     | -       | Optional max number of images   |
-| `className` | `string`                     | -       | Additional Tailwind CSS classes |
+| Prop         | Type                         | Default                           | Description                                                                 |
+|--------------|------------------------------|-----------------------------------|-----------------------------------------------------------------------------|
+| `value`      | `string[]`                   | `[]`                              | Controlled array of file URLs                                               |
+| `onChange`   | `(images: string[]) => void` | -                                 | Callback to update the value                                                |
+| `maxImages`  | `number`                     | -                                 | Optional maximum number of files allowed                                    |
+| `className`  | `string`                     | -                                 | Additional Tailwind CSS classes for styling                                 |
+| `name`       | `string`                     | -                                 | Optional field name for React Hook Form integration                         |
+| `imageRegex` | `RegExp`                     | `/\.(jpeg\|jpg\|png\|gif\|webp\|avif)$/i` | Regex to detect image formats for initial value previews                    |
+| `accept`     | `string`                     | `"image/*"`                       | MIME types or file extensions accepted by the file input (e.g., `"image/png, image/jpeg"`) |
+
+**Notes:**
+- `imageRegex` determines which initial URLs are treated as images for preview rendering. Customize it to support additional formats (e.g., `.svg`).
+- `accept` restricts the file picker to specific types during uploads. Use MIME types or extensions (e.g., `"image/*,application/pdf"`).
 
 ## File Structure
 
